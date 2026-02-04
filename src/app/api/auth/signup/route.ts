@@ -45,6 +45,19 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: 'Account created successfully', result }, { status: 201 });
     } catch (error: any) {
         console.error('Signup Error:', error);
-        return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+
+        // Return more specific error messages
+        if (error.code === 'P2002') {
+            return NextResponse.json({ message: 'Email already exists' }, { status: 400 });
+        }
+
+        if (error.message?.includes('connect')) {
+            return NextResponse.json({ message: 'Database connection error. Please check your DATABASE_URL.' }, { status: 500 });
+        }
+
+        return NextResponse.json({
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        }, { status: 500 });
     }
 }
