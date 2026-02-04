@@ -2,6 +2,7 @@
     "name": "WageFlow | Attendance & Wages",
     "short_name": "WageFlow",
     "description": "Efficiently manage daily wage and salaried staff attendance and dues.",
+    "id": "/",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
