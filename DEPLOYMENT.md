@@ -8,10 +8,15 @@ Make sure to set the following environment variables in your Vercel project sett
 
 1. **DATABASE_URL**
    ```
-   mongodb+srv://username:password@cluster.mongodb.net/wageflow?retryWrites=true&w=majority
+   mongodb+srv://username:password@cluster.mongodb.net/wageflow?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=false
    ```
    - Replace `username`, `password`, and `cluster` with your MongoDB Atlas credentials
    - Make sure the database name is `wageflow` (or your preferred name)
+   - **IMPORTANT**: Include `tls=true` and `tlsAllowInvalidCertificates=false` for Vercel compatibility
+   - **Alternative format** (if above doesn't work):
+     ```
+     mongodb+srv://username:password@cluster.mongodb.net/wageflow?retryWrites=true&w=majority&ssl=true
+     ```
 
 2. **NEXTAUTH_SECRET**
    ```
@@ -45,6 +50,28 @@ Make sure to set the following environment variables in your Vercel project sett
    - The `postinstall` script will run `prisma generate` automatically
 
 ## Troubleshooting
+
+### "Server selection timeout" or "InternalError" on signup
+This is a TLS/SSL connection issue. **Fix:**
+
+1. **Update your DATABASE_URL** in Vercel environment variables:
+   ```
+   mongodb+srv://username:password@cluster.mongodb.net/wageflow?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=false
+   ```
+   
+2. **If that doesn't work**, try this alternative:
+   ```
+   mongodb+srv://username:password@cluster.mongodb.net/wageflow?retryWrites=true&w=majority&ssl=true
+   ```
+
+3. **Redeploy** after updating the environment variable:
+   - Go to Vercel Dashboard → Deployments
+   - Click the three dots on the latest deployment
+   - Select "Redeploy"
+
+4. **Check MongoDB Atlas version**:
+   - Ensure you're using MongoDB 4.4 or higher
+   - Older versions may have TLS compatibility issues with Vercel
 
 ### "Internal server error" on signup
 - Check Vercel logs: https://vercel.com/your-project/logs
