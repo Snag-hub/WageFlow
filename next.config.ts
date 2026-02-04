@@ -3,12 +3,15 @@ import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Empty turbopack config to silence the warning
-  turbopack: {},
 };
 
 export default withPWA({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  disable: false,
   register: true,
+  workboxOptions: {
+    skipWaiting: true,
+    clientsClaim: true,
+    disableDevLogs: false,
+  },
 })(nextConfig);
