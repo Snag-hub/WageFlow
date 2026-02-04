@@ -12,17 +12,13 @@ Make sure to set the following environment variables in your Vercel project sett
    ```
    - Replace `username`, `password`, and `cluster` with your MongoDB Atlas credentials
    - Make sure the database name is `wageflow` (or your preferred name)
-   - **IMPORTANT**: Include `tls=true` and `tlsAllowInvalidCertificates=false` for Vercel compatibility
-   - **Alternative format** (if above doesn't work):
-     ```
      mongodb+srv://username:password@cluster.mongodb.net/wageflow?retryWrites=true&w=majority&ssl=true
      ```
 
 2. **NEXTAUTH_SECRET**
    ```
    Generate a secure random string (at least 32 characters)
-   ```
-   - You can generate one using: `openssl rand -base64 32`
+   
    - Or use: https://generate-secret.vercel.app/32
 
 3. **NEXTAUTH_URL**
