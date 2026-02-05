@@ -186,8 +186,8 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                 </button>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-slate-50 text-slate-500 font-medium uppercase text-xs">
                         <tr>
@@ -232,7 +232,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                                             onClick={() => togglePresence(emp.id)}
                                             className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${rec.isPresent
                                                     ? 'bg-indigo-600 text-white'
-                                                    : 'border-2 border-slate-300 text-transparent hover:border-slate-400'
+                                                    : 'border-2 border-slate-300 text-transparent hover:border-400'
                                                 }`}
                                         >
                                             <CheckSquare size={16} />
@@ -285,6 +285,105 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                         })}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3 p-4 bg-slate-50">
+                {/* Mobile Bulk Actions */}
+                <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4">
+                    <div className="text-xs font-bold text-slate-500 uppercase mb-2">Bulk Actions</div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <select
+                            className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
+                            onChange={(e) => handleApplyAll('workTypeId', e.target.value)}
+                        >
+                            <option value="">Apply Role to All...</option>
+                            {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
+                        </select>
+                        <select
+                            className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
+                            onChange={(e) => handleApplyAll('payerId', e.target.value)}
+                        >
+                            <option value="">Apply Payer to All...</option>
+                            {payers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                {employees.map(emp => {
+                    const rec = records[emp.id];
+                    if (!rec) return null;
+
+                    return (
+                        <div
+                            key={emp.id}
+                            onClick={(e) => {
+                                // Prevent toggle if clicking internal inputs
+                                if ((e.target as HTMLElement).tagName === 'SELECT' || (e.target as HTMLElement).tagName === 'INPUT') return;
+                                togglePresence(emp.id);
+                            }}
+                            className={`p-4 rounded-xl border transition-all duration-200 relative overflow-hidden ${rec.isPresent
+                                    ? 'bg-white border-indigo-600 shadow-md ring-1 ring-indigo-600'
+                                    : 'bg-slate-100/50 border-slate-200 opacity-80'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold transition-colors ${rec.isPresent ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-400'
+                                    }`}>
+                                    {emp.name.charAt(0)}
+                                </div>
+                                <div className="flex-1">
+                                    <div className={`font-semibold ${rec.isPresent ? 'text-slate-900' : 'text-slate-500'}`}>
+                                        {emp.name}
+                                    </div>
+                                    <div className="text-xs text-slate-500 capitalize">{emp.type} • ₹{emp.defaultWage}/day</div>
+                                </div>
+                                {rec.isPresent && (
+                                    <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white">
+                                        <CheckSquare size={14} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Expanded Details when Present */}
+                            {rec.isPresent && (
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 animate-in slide-in-from-top-2 fade-in">
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Role</label>
+                                        <select
+                                            value={rec.workTypeId}
+                                            onChange={(e) => updateRecord(emp.id, 'workTypeId', e.target.value)}
+                                            className="w-full text-sm border-slate-200 rounded-lg py-1.5 focus:ring-indigo-500 focus:border-indigo-500"
+                                        >
+                                            <option value="">Select Role...</option>
+                                            {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Payer</label>
+                                        <select
+                                            value={rec.payerId}
+                                            onChange={(e) => updateRecord(emp.id, 'payerId', e.target.value)}
+                                            className="w-full text-sm border-slate-200 rounded-lg py-1.5 focus:ring-indigo-500 focus:border-indigo-500"
+                                        >
+                                            <option value="">Select Payer...</option>
+                                            {payers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Daily Wage (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={rec.wage}
+                                            onChange={(e) => updateRecord(emp.id, 'wage', parseFloat(e.target.value))}
+                                            className="w-full text-sm border-slate-200 rounded-lg py-1.5 font-mono focus:ring-indigo-500 focus:border-indigo-500"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
