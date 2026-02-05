@@ -11,5 +11,7 @@ export default withPWA({
   register: true,
   workboxOptions: {
     disableDevLogs: false,
+    skipWaiting: true,
+    clientsClaim: true,
   },
 })(nextConfig);
