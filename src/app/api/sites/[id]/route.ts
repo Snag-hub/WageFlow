@@ -47,7 +47,16 @@ export async function PUT(
 
     try {
         const { id } = await params;
-        const { name, location } = await req.json();
+        const {
+            name,
+            location,
+            pricingModel,
+            rate,
+            quantity,
+            contractAmount,
+            includesMaterial,
+            notes
+        } = await req.json();
 
         if (!name || name.trim() === '') {
             return NextResponse.json({ message: 'Site name is required' }, { status: 400 });
@@ -70,6 +79,12 @@ export async function PUT(
             data: {
                 name: name.trim(),
                 location: location?.trim() || null,
+                pricingModel: pricingModel || 'item_rate',
+                rate: rate ? parseFloat(rate) : null,
+                quantity: quantity ? parseFloat(quantity) : null,
+                contractAmount: contractAmount ? parseFloat(contractAmount) : null,
+                includesMaterial: !!includesMaterial,
+                notes: notes?.trim() || null
             },
         });
 
