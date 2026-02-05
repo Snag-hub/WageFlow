@@ -35,6 +35,45 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
     const [saving, setSaving] = useState(false);
     const [initialized, setInitialized] = useState(false);
 
+    // Quick Add State
+    const [showAddModal, setShowAddModal] = useState<'workType' | 'payer' | null>(null);
+    const [newItemName, setNewItemName] = useState('');
+    const [addingItem, setAddingItem] = useState(false);
+
+    const handleQuickAdd = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newItemName.trim() || !showAddModal) return;
+
+        setAddingItem(true);
+        const endpoint = showAddModal === 'workType' ? '/api/work-types' : '/api/payers';
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newItemName })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (showAddModal === 'workType') {
+                    setWorkTypes(prev => [...prev, data]);
+                } else {
+                    setPayers(prev => [...prev, data]);
+                }
+                setShowAddModal(null);
+                setNewItemName('');
+            } else {
+                alert('Failed to add item');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error adding item');
+        } finally {
+            setAddingItem(false);
+        }
+    };
+
     // Fetch dependent data (Work Types, Payers)
     useEffect(() => {
         Promise.all([
@@ -196,8 +235,15 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                             <th className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                     Work Type
+                                    <button
+                                        onClick={() => setShowAddModal('workType')}
+                                        className="text-indigo-600 hover:bg-indigo-50 rounded p-0.5"
+                                        title="Add New Work Type"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
                                     <select
-                                        className="text-xs border rounded px-1 py-0.5 font-normal normal-case"
+                                        className="text-xs border rounded px-1 py-0.5 font-normal normal-case ml-auto"
                                         onChange={(e) => handleApplyAll('workTypeId', e.target.value)}
                                     >
                                         <option value="">Apply All...</option>
@@ -208,8 +254,15 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                             <th className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                     Payer
+                                    <button
+                                        onClick={() => setShowAddModal('payer')}
+                                        className="text-indigo-600 hover:bg-indigo-50 rounded p-0.5"
+                                        title="Add New Payer"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
                                     <select
-                                        className="text-xs border rounded px-1 py-0.5 font-normal normal-case"
+                                        className="text-xs border rounded px-1 py-0.5 font-normal normal-case ml-auto"
                                         onChange={(e) => handleApplyAll('payerId', e.target.value)}
                                     >
                                         <option value="">Apply All...</option>
@@ -293,20 +346,36 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                 <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4">
                     <div className="text-xs font-bold text-slate-500 uppercase mb-2">Bulk Actions</div>
                     <div className="grid grid-cols-2 gap-3">
-                        <select
-                            className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
-                            onChange={(e) => handleApplyAll('workTypeId', e.target.value)}
-                        >
-                            <option value="">Apply Role to All...</option>
-                            {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
-                        </select>
-                        <select
-                            className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
-                            onChange={(e) => handleApplyAll('payerId', e.target.value)}
-                        >
-                            <option value="">Apply Payer to All...</option>
-                            {payers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
+                        <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                                <span>ROLE</span>
+                                <button onClick={() => setShowAddModal('workType')} className="text-indigo-600 flex items-center gap-0.5">
+                                    <Plus size={10} /> Add
+                                </button>
+                            </div>
+                            <select
+                                className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
+                                onChange={(e) => handleApplyAll('workTypeId', e.target.value)}
+                            >
+                                <option value="">Apply All...</option>
+                                {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                                <span>PAYER</span>
+                                <button onClick={() => setShowAddModal('payer')} className="text-indigo-600 flex items-center gap-0.5">
+                                    <Plus size={10} /> Add
+                                </button>
+                            </div>
+                            <select
+                                className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
+                                onChange={(e) => handleApplyAll('payerId', e.target.value)}
+                            >
+                                <option value="">Apply All...</option>
+                                {payers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -385,6 +454,41 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                     );
                 })}
             </div>
+
+            {/* Quick Add Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm animate-in zoom-in-95">
+                        <h3 className="text-lg font-bold mb-4">Add {showAddModal === 'workType' ? 'Work Type' : 'Payer'}</h3>
+                        <form onSubmit={handleQuickAdd}>
+                            <input
+                                autoFocus
+                                type="text"
+                                className="w-full border-slate-200 rounded-xl mb-4 focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder={`Enter ${showAddModal === 'workType' ? 'Role Name' : 'Payer Name'}`}
+                                value={newItemName}
+                                onChange={(e) => setNewItemName(e.target.value)}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowAddModal(null); setNewItemName(''); }}
+                                    className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!newItemName.trim() || addingItem}
+                                    className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                    {addingItem ? 'Adding...' : 'Add'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
