@@ -11,6 +11,7 @@ import {
     Building2
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Site {
     id: string;
@@ -45,7 +46,10 @@ export default function SitesPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const router = useRouter();
+
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
         if (!confirm('Are you sure you want to delete this site?')) return;
 
         try {
@@ -124,7 +128,8 @@ export default function SitesPage() {
                             {filteredSites.map((site) => (
                                 <div
                                     key={site.id}
-                                    className="p-6 border border-slate-200 rounded-2xl hover:shadow-md transition-all group bg-white"
+                                    onClick={() => router.push(`/sites/${site.id}`)}
+                                    className="p-6 border border-slate-200 rounded-2xl hover:shadow-md transition-all group bg-white cursor-pointer"
                                 >
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
@@ -133,12 +138,13 @@ export default function SitesPage() {
                                         <div className="flex gap-1">
                                             <Link
                                                 href={`/sites/${site.id}`}
+                                                onClick={(e) => e.stopPropagation()}
                                                 className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all"
                                             >
                                                 <Edit2 size={16} />
                                             </Link>
                                             <button
-                                                onClick={() => handleDelete(site.id)}
+                                                onClick={(e) => handleDelete(e, site.id)}
                                                 className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                             >
                                                 <Trash2 size={16} />

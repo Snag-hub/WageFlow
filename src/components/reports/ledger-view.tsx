@@ -54,7 +54,7 @@ export default function LedgerView() {
     return (
         <div className="space-y-6">
             {/* Header / Filter */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
                 <div className="w-full sm:w-auto flex-1 max-w-sm">
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Employee</label>
                     <div className="relative">
@@ -73,12 +73,27 @@ export default function LedgerView() {
                 </div>
 
                 {selectedEmp && (
-                    <div className="flex gap-2">
-                        <button className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200" title="Print">
+                    <div className="flex gap-2 no-print">
+                        <button
+                            onClick={() => window.print()}
+                            className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200"
+                            title="Print"
+                        >
                             <Printer size={20} />
                         </button>
                     </div>
                 )}
+            </div>
+
+            {/* Print Header */}
+            <div className="hidden print:block mb-6">
+                <h1 className="text-2xl font-bold text-slate-900">Employee Ledger</h1>
+                <p className="text-slate-500">
+                    Employee: {employees.find(e => e.id === selectedEmp)?.name}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                    Generated on {new Date().toLocaleDateString()}
+                </p>
             </div>
 
             {loading && (

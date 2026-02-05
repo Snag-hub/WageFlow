@@ -63,3 +63,36 @@ body {
     @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
   }
 }
+
+@media print {
+  /* Hide UI Chrome */
+  aside, 
+  nav, 
+  header, 
+  .no-print,
+  button[title="Print"] { 
+    display: none !important; 
+  }
+
+  /* Reset Layout */
+  body {
+    background: white;
+  }
+  
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Force Backgrounds */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Layout Adjustments */
+  .space-y-6 > :not(.no-print) {
+    margin-top: 1rem;
+  }
+}
