@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, CheckSquare, Square, Users } from 'lucide-react';
+import { Save, CheckSquare, Square, Users, Plus } from 'lucide-react';
 
 type Employee = {
     id: string;
@@ -231,8 +231,8 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                                         <button
                                             onClick={() => togglePresence(emp.id)}
                                             className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${rec.isPresent
-                                                    ? 'bg-indigo-600 text-white'
-                                                    : 'border-2 border-slate-300 text-transparent hover:border-400'
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'border-2 border-slate-300 text-transparent hover:border-400'
                                                 }`}
                                         >
                                             <CheckSquare size={16} />
@@ -323,8 +323,8 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                                 togglePresence(emp.id);
                             }}
                             className={`p-4 rounded-xl border transition-all duration-200 relative overflow-hidden ${rec.isPresent
-                                    ? 'bg-white border-indigo-600 shadow-md ring-1 ring-indigo-600'
-                                    : 'bg-slate-100/50 border-slate-200 opacity-80'
+                                ? 'bg-white border-indigo-600 shadow-md ring-1 ring-indigo-600'
+                                : 'bg-slate-100/50 border-slate-200 opacity-80'
                                 }`}
                         >
                             <div className="flex items-center gap-3 mb-3">
