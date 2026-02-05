@@ -38,7 +38,17 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { name, location } = await req.json();
+        const body = await req.json();
+        const {
+            name,
+            location,
+            pricingModel,
+            rate,
+            quantity,
+            contractAmount,
+            includesMaterial,
+            notes
+        } = body;
 
         if (!name || name.trim() === '') {
             return NextResponse.json({ message: 'Site name is required' }, { status: 400 });
@@ -49,6 +59,12 @@ export async function POST(req: Request) {
                 name: name.trim(),
                 location: location?.trim() || null,
                 companyId: session.user.companyId,
+                pricingModel: pricingModel || 'item_rate',
+                rate: rate ? parseFloat(rate) : null,
+                quantity: quantity ? parseFloat(quantity) : null,
+                contractAmount: contractAmount ? parseFloat(contractAmount) : null,
+                includesMaterial: !!includesMaterial,
+                notes: notes?.trim() || null
             },
         });
 

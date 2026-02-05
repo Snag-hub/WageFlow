@@ -55,9 +55,30 @@ model Site {
   companyId String
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name      String
-  location  String?
+  location          String?
   
-  attendance Attendance[]
+  // Financials
+  pricingModel      String   @default("item_rate") // item_rate, lump_sum, cost_plus
+  includesMaterial  Boolean  @default(false)
+  rate              Float?   // for item_rate
+  quantity          Float?   // Estimated Sq Ft / Units
+  contractAmount    Float?   // Fixed value for lump_sum (or cached total)
+  notes             String?
+
+  siteTransactions  SiteTransaction[]
+  attendance        Attendance[]
+}
+
+model SiteTransaction {
+  id          String   @id @default(uuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  amount      Float
+  date        DateTime
+  type        String   // advance, settlement
+  paymentMode String   @default("cash") // cash, upi, cheque
+  note        String?
+  createdAt   DateTime @default(now())
 }
 
 model WorkType {

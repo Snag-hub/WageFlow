@@ -279,13 +279,13 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                             if (!rec) return null;
 
                             return (
-                                <tr key={emp.id} className={rec.isPresent ? 'bg-indigo-50/30' : 'hover:bg-slate-50'}>
+                                <tr key={emp.id} className={rec.isPresent ? 'bg-indigo-50' : 'hover:bg-slate-50'}>
                                     <td className="px-4 py-3">
                                         <button
                                             onClick={() => togglePresence(emp.id)}
                                             className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${rec.isPresent
                                                 ? 'bg-indigo-600 text-white'
-                                                : 'border-2 border-slate-300 text-transparent hover:border-400'
+                                                : 'border-2 border-slate-300 text-transparent hover:border-slate-400'
                                                 }`}
                                         >
                                             <CheckSquare size={16} />

@@ -11,6 +11,12 @@ export default function NewSitePage() {
     const [formData, setFormData] = useState({
         name: '',
         location: '',
+        pricingModel: 'item_rate',
+        rate: '',
+        quantity: '',
+        contractAmount: '',
+        includesMaterial: false,
+        notes: ''
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -83,6 +89,95 @@ export default function NewSitePage() {
                             className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none transition-all resize-none"
                         />
                         <p className="text-xs text-slate-400 mt-1">Optional: Add the full address or location details</p>
+                    </div>
+
+                    {/* Financial Matrix */}
+                    <div className="pt-4 border-t border-slate-100">
+                        <h3 className="text-lg font-bold text-slate-900 mb-4">Contract & Pricing</h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-900 mb-2">Pricing Model</label>
+                                <select
+                                    value={formData.pricingModel}
+                                    onChange={(e) => setFormData({ ...formData, pricingModel: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                >
+                                    <option value="item_rate">Item Rate (Per SqFt/Unit)</option>
+                                    <option value="lump_sum">Lump Sum (Fixed Price)</option>
+                                    <option value="cost_plus">Cost Plus (Daily Wage)</option>
+                                </select>
+                            </div>
+
+                            {/* Material Toggle (Only for Item Rate usually, but can be general) */}
+                            <div className="flex items-center pt-8">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.includesMaterial}
+                                        onChange={(e) => setFormData({ ...formData, includesMaterial: e.target.checked })}
+                                        className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">Includes Material?</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Dynamic Fields based on Model */}
+                        {formData.pricingModel === 'item_rate' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 mb-2">Rate (₹)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.rate}
+                                        onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
+                                        placeholder="e.g. 55"
+                                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 mb-2">Est. Quantity (SqFt)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.quantity}
+                                        onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                        placeholder="e.g. 1200 (Leave empty if unknown)"
+                                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {formData.pricingModel === 'lump_sum' && (
+                            <div>
+                                <label className="block text-sm font-bold text-slate-900 mb-2">Fixed Contract Amount (₹)</label>
+                                <input
+                                    type="number"
+                                    value={formData.contractAmount}
+                                    onChange={(e) => setFormData({ ...formData, contractAmount: e.target.value })}
+                                    placeholder="e.g. 50000"
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                />
+                            </div>
+                        )}
+
+                        {formData.pricingModel === 'cost_plus' && (
+                            <div className="p-3 bg-blue-50 text-blue-700 text-sm rounded-xl">
+                                Value will be calculated based on total wages paid to attendance records.
+                            </div>
+                        )}
+
+                        <div className="mt-4">
+                            <label className="block text-sm font-bold text-slate-900 mb-2">Notes / Terms</label>
+                            <textarea
+                                value={formData.notes}
+                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                placeholder="Payment terms, exclusions, etc."
+                                rows={2}
+                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none resize-none"
+                            />
+                        </div>
                     </div>
 
                     <div className="flex gap-3 pt-4">
