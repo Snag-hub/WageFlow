@@ -47,7 +47,8 @@ export async function POST(req: Request) {
             quantity,
             contractAmount,
             includesMaterial,
-            notes
+            notes,
+            payerId
         } = body;
 
         if (!name || name.trim() === '') {
@@ -64,7 +65,8 @@ export async function POST(req: Request) {
                 quantity: quantity ? parseFloat(quantity) : null,
                 contractAmount: contractAmount ? parseFloat(contractAmount) : null,
                 includesMaterial: !!includesMaterial,
-                notes: notes?.trim() || null
+                notes: notes?.trim() || null,
+                payerId: payerId || null
             },
         });
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
     LayoutDashboard,
     Users,
@@ -10,7 +11,8 @@ import {
     Wallet,
     BarChart3,
     Settings,
-    X
+    X,
+    User as UserIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +33,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const { data: session } = useSession();
 
     return (
         <>
@@ -91,15 +94,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </nav>
 
                     <div className="p-4 border-t border-slate-100">
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/50">
-                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center border border-slate-300">
-                                <Users size={16} className="text-slate-500" />
+                        <Link
+                            href="/account"
+                            className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/50 hover:bg-slate-100 transition-all group"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-slate-200 shadow-sm group-hover:border-slate-300 transition-all">
+                                <UserIcon size={16} className="text-slate-500" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-slate-900 truncate">Admin User</p>
-                                <p className="text-xs text-slate-500 truncate">Company ID: 123</p>
+                                <p className="text-sm font-bold text-slate-900 truncate">
+                                    {session?.user?.name || session?.user?.email?.split('@')[0] || 'User'}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">
+                                    {session?.user?.role || 'Member'}
+                                </p>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                 </div>
             </aside>

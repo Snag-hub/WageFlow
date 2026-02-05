@@ -55,7 +55,8 @@ export async function PUT(
             quantity,
             contractAmount,
             includesMaterial,
-            notes
+            notes,
+            payerId
         } = await req.json();
 
         if (!name || name.trim() === '') {
@@ -84,7 +85,8 @@ export async function PUT(
                 quantity: quantity ? parseFloat(quantity) : null,
                 contractAmount: contractAmount ? parseFloat(contractAmount) : null,
                 includesMaterial: !!includesMaterial,
-                notes: notes?.trim() || null
+                notes: notes?.trim() || null,
+                payerId: payerId || null
             },
         });
 

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Save } from 'lucide-react';
+import { ArrowLeft, MapPin, Save, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewSitePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [payers, setPayers] = useState<{ id: string, name: string }[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         location: '',
@@ -16,8 +17,18 @@ export default function NewSitePage() {
         quantity: '',
         contractAmount: '',
         includesMaterial: false,
-        notes: ''
+        notes: '',
+        payerId: ''
     });
+
+    useEffect(() => {
+        fetch('/api/payers')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setPayers(data);
+            })
+            .catch(err => console.error('Error fetching payers:', err));
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -97,6 +108,24 @@ export default function NewSitePage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
+                                <label className="block text-sm font-bold text-slate-900 mb-2">Primary Payer (Client)</label>
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <select
+                                        value={formData.payerId}
+                                        onChange={(e) => setFormData({ ...formData, payerId: e.target.value })}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                    >
+                                        <option value="">-- Select Payer --</option>
+                                        {payers.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-1 font-medium">All attendance and payments for this site will be linked to this payer.</p>
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-bold text-slate-900 mb-2">Pricing Model</label>
                                 <select
                                     value={formData.pricingModel}
@@ -108,19 +137,18 @@ export default function NewSitePage() {
                                     <option value="cost_plus">Cost Plus (Daily Wage)</option>
                                 </select>
                             </div>
+                        </div>
 
-                            {/* Material Toggle (Only for Item Rate usually, but can be general) */}
-                            <div className="flex items-center pt-8">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.includesMaterial}
-                                        onChange={(e) => setFormData({ ...formData, includesMaterial: e.target.checked })}
-                                        className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                                    />
-                                    <span className="text-sm font-medium text-slate-700">Includes Material?</span>
-                                </label>
-                            </div>
+                        <div className="flex items-center mb-6">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.includesMaterial}
+                                    onChange={(e) => setFormData({ ...formData, includesMaterial: e.target.checked })}
+                                    className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                                />
+                                <span className="text-sm font-medium text-slate-700">Includes Material?</span>
+                            </label>
                         </div>
 
                         {/* Dynamic Fields based on Model */}

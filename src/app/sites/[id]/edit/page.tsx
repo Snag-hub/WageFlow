@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 interface Site {
@@ -15,6 +15,7 @@ interface Site {
     quantity: number | null;
     contractAmount: number | null;
     notes: string | null;
+    payerId: string | null;
 }
 
 export default function EditSitePage() {
@@ -22,6 +23,7 @@ export default function EditSitePage() {
     const params = useParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [payers, setPayers] = useState<{ id: string, name: string }[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         location: '',
@@ -30,11 +32,17 @@ export default function EditSitePage() {
         rate: '',
         quantity: '',
         contractAmount: '',
-        notes: ''
+        notes: '',
+        payerId: ''
     });
 
     useEffect(() => {
-        fetchSite();
+        Promise.all([
+            fetchSite(),
+            fetch('/api/payers').then(res => res.json())
+        ]).then(([_, payersData]) => {
+            if (Array.isArray(payersData)) setPayers(payersData);
+        }).catch(err => console.error('Initialization error:', err));
     }, []);
 
     const fetchSite = async () => {
@@ -50,7 +58,8 @@ export default function EditSitePage() {
                     rate: data.rate ? data.rate.toString() : '',
                     quantity: data.quantity ? data.quantity.toString() : '',
                     contractAmount: data.contractAmount ? data.contractAmount.toString() : '',
-                    notes: data.notes || ''
+                    notes: data.notes || '',
+                    payerId: data.payerId || ''
                 });
             } else {
                 alert('Site not found');
@@ -157,6 +166,24 @@ export default function EditSitePage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
+                                <label className="block text-sm font-bold text-slate-900 mb-2">Primary Payer (Client)</label>
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <select
+                                        value={formData.payerId}
+                                        onChange={(e) => setFormData({ ...formData, payerId: e.target.value })}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                    >
+                                        <option value="">-- Select Payer --</option>
+                                        {payers.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-1 font-medium">All attendance and payments for this site will be linked to this payer.</p>
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-bold text-slate-900 mb-2">Pricing Model</label>
                                 <select
                                     value={formData.pricingModel}
@@ -168,18 +195,18 @@ export default function EditSitePage() {
                                     <option value="cost_plus">Cost Plus (Daily Wage)</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div className="flex items-center pt-8">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.includesMaterial}
-                                        onChange={(e) => setFormData({ ...formData, includesMaterial: e.target.checked })}
-                                        className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                                    />
-                                    <span className="text-sm font-medium text-slate-700">Includes Material?</span>
-                                </label>
-                            </div>
+                        <div className="flex items-center mb-6">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.includesMaterial}
+                                    onChange={(e) => setFormData({ ...formData, includesMaterial: e.target.checked })}
+                                    className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                                />
+                                <span className="text-sm font-medium text-slate-700">Includes Material?</span>
+                            </label>
                         </div>
 
                         {formData.pricingModel === 'item_rate' && (

@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { employeeId, type, amount, date, note } = await req.json();
+        const { employeeId, type, amount, date, note, siteId } = await req.json();
 
         if (!employeeId || !type || !amount || !date) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
@@ -75,7 +75,8 @@ export async function POST(req: Request) {
                 type, // 'advance', 'payment', 'salary_credit'
                 amount: parseFloat(amount),
                 date: new Date(date),
-                note: note || ''
+                note: note || '',
+                siteId: siteId || null
             }
         });
 

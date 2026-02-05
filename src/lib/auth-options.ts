@@ -38,7 +38,8 @@ export const authOptions: NextAuthOptions = {
                     email: user.email,
                     name: user.role, // Or add a name field to User model
                     companyId: user.companyId,
-                    companyName: user.company?.name
+                    companyName: user.company?.name,
+                    role: user.role
                 };
             }
         })
@@ -52,6 +53,7 @@ export const authOptions: NextAuthOptions = {
                 token.id = user.id;
                 token.companyId = user.companyId;
                 token.companyName = user.companyName;
+                token.role = user.role;
             }
             return token;
         },
@@ -60,6 +62,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.id = token.id;
                 session.user.companyId = token.companyId;
                 session.user.companyName = token.companyName;
+                session.user.role = token.role;
             }
             return session;
         }
