@@ -65,34 +65,64 @@ body {
 }
 
 @media print {
-  /* Hide UI Chrome */
-  aside, 
-  nav, 
-  header, 
-  .no-print,
-  button[title="Print"] { 
-    display: none !important; 
-  }
 
-  /* Reset Layout */
-  body {
-    background: white;
-  }
-  
-  main {
-    margin: 0 !important;
-    padding: 0 !important;
-    max-width: none !important;
-  }
-
-  /* Force Backgrounds */
+  /* Sharpness & Contrast */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    transition: none !important;
   }
-  
-  /* Layout Adjustments */
-  .space-y-6 > :not(.no-print) {
-    margin-top: 1rem;
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-font-smoothing: auto !important;
+    -moz-osx-font-smoothing: auto !important;
+    font-size: 11pt;
+    /* Standard print size */
+  }
+
+  /* Hide UI elements */
+  aside,
+  nav,
+  header,
+  .no-print,
+  button[title="Print"],
+  .p-2.text-slate-600.hover\:bg-slate-50.rounded-lg.border.border-slate-200 {
+    display: none !important;
+  }
+
+  /* Reset Layout */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Table Sharpness */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #ddd !important;
+    /* Force visible borders */
+    color: black !important;
+  }
+
+  /* Force headers to stay visible and dark */
+  thead {
+    display: table-header-group;
+    background-color: #f8fafc !important;
+  }
+
+  /* Spacing */
+  .space-y-6> :not(.no-print) {
+    margin-top: 1.5rem;
   }
 }

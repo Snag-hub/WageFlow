@@ -137,14 +137,21 @@ export async function GET(req: Request) {
 
         // If history is empty, check for opening balance? (Not implemented yet, assume 0)
 
-        // Find Employee Name
-        const employee = await prisma.employee.findUnique({
-            where: { id: employeeId },
-            select: { name: true, type: true, defaultWage: true }
-        });
+        // Find Employee & Company Details
+        const [employee, company] = await Promise.all([
+            prisma.employee.findUnique({
+                where: { id: employeeId },
+                select: { name: true, phone: true, type: true, defaultWage: true }
+            }),
+            prisma.company.findUnique({
+                where: { id: companyId },
+                select: { name: true }
+            })
+        ]);
 
         return NextResponse.json({
             employee,
+            company,
             summary: {
                 totalEarned,
                 totalPaid,

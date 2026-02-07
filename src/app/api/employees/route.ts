@@ -41,6 +41,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: 'Name is required' }, { status: 400 });
         }
 
+        // Diagnostic Log
+        console.log('Attempting to create employee for companyId:', session.user.companyId);
+
+        // Optional: Verify company existence if debugging
+        const company = await prisma.company.findUnique({
+            where: { id: session.user.companyId }
+        });
+
+        if (!company) {
+            console.error('CRITICAL: Company not found for ID in session!', session.user.companyId);
+            return NextResponse.json({
+                message: 'Your session is associated with a company that no longer exists. Please log out and log back in.'
+            }, { status: 400 });
+        }
+
         const employee = await prisma.employee.create({
             data: {
                 name,

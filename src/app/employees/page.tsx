@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Users,
     Plus,
@@ -9,7 +10,10 @@ import {
     Phone,
     Briefcase,
     ChevronRight,
-    Filter
+    Filter,
+    Edit,
+    Trash2,
+    Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +30,8 @@ export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         fetchEmployees();
@@ -42,6 +48,32 @@ export default function EmployeesPage() {
             console.error('Error fetching employees:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
+        e.stopPropagation();
+        if (!confirm(`Are you sure you want to delete ${name}? This will also delete their attendance records.`)) {
+            return;
+        }
+
+        setDeletingId(id);
+        try {
+            const res = await fetch(`/api/employees/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (res.ok) {
+                setEmployees(employees.filter(emp => emp.id !== id));
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to delete employee');
+            }
+        } catch (error) {
+            console.error('Delete Error:', error);
+            alert('An error occurred while deleting');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -116,7 +148,11 @@ export default function EmployeesPage() {
                                 </tr>
                             ) : (
                                 filteredEmployees.map((employee) => (
-                                    <tr key={employee.id} className="group hover:bg-slate-50 transition-colors">
+                                    <tr
+                                        key={employee.id}
+                                        onClick={() => router.push(`/employees/${employee.id}`)}
+                                        className="group hover:bg-slate-50 transition-colors cursor-pointer"
+                                    >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-slate-900/5 flex items-center justify-center text-slate-700 font-bold border border-slate-200">
@@ -152,11 +188,30 @@ export default function EmployeesPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all">
-                                                    <MoreVertical size={18} />
+                                            <div className="flex items-center justify-end gap-2 px-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/employees/${employee.id}`);
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all"
+                                                    title="Edit Employee"
+                                                >
+                                                    <Edit size={18} />
                                                 </button>
-                                                <ChevronRight className="text-slate-300 group-hover:translate-x-1 transition-transform" size={18} />
+                                                <button
+                                                    onClick={(e) => handleDelete(e, employee.id, employee.name)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all"
+                                                    disabled={deletingId === employee.id}
+                                                    title="Delete Employee"
+                                                >
+                                                    {deletingId === employee.id ? (
+                                                        <Loader2 size={18} className="animate-spin" />
+                                                    ) : (
+                                                        <Trash2 size={18} />
+                                                    )}
+                                                </button>
+                                                <ChevronRight className="ml-1 text-slate-300 group-hover:translate-x-1 transition-transform" size={18} />
                                             </div>
                                         </td>
                                     </tr>

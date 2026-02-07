@@ -80,3 +80,42 @@ export async function PUT(
         return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
     }
 }
+
+// DELETE - Delete an employee
+export async function DELETE(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.companyId) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const { id } = await params;
+
+        // Check ownership
+        const employee = await prisma.employee.findFirst({
+            where: {
+                id,
+                companyId: session.user.companyId,
+            },
+        });
+
+        if (!employee) {
+            return NextResponse.json({ message: 'Employee not found' }, { status: 404 });
+        }
+
+        // Delete employee (Cascade will handle related data if configured, 
+        // but Prisma onDelete: Cascade is at the DB level usually)
+        await prisma.employee.delete({
+            where: { id },
+        });
+
+        return NextResponse.json({ message: 'Employee deleted successfully' });
+    } catch (error) {
+        console.error('Delete Employee Error:', error);
+        return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    }
+}

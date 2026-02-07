@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Save, CreditCard } from 'lucide-react';
+import { ArrowLeft, MapPin, Save, CreditCard, Plus, X, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewSitePage() {
@@ -20,6 +20,36 @@ export default function NewSitePage() {
         notes: '',
         payerId: ''
     });
+
+    // Quick Add Payer State
+    const [showQuickAdd, setShowQuickAdd] = useState(false);
+    const [newPayerName, setNewPayerName] = useState('');
+    const [isCreatingPayer, setIsCreatingPayer] = useState(false);
+
+    const handleQuickAddPayer = async () => {
+        if (!newPayerName.trim()) return;
+        setIsCreatingPayer(true);
+        try {
+            const res = await fetch('/api/payers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newPayerName }),
+            });
+            if (res.ok) {
+                const newPayer = await res.json();
+                setPayers(prev => [...prev, newPayer]);
+                setFormData(prev => ({ ...prev, payerId: newPayer.id }));
+                setShowQuickAdd(false);
+                setNewPayerName('');
+            } else {
+                alert('Failed to adding client');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            setIsCreatingPayer(false);
+        }
+    };
 
     useEffect(() => {
         fetch('/api/payers')
@@ -108,20 +138,60 @@ export default function NewSitePage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label className="block text-sm font-bold text-slate-900 mb-2">Primary Payer (Client)</label>
-                                <div className="relative">
-                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                    <select
-                                        value={formData.payerId}
-                                        onChange={(e) => setFormData({ ...formData, payerId: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
-                                    >
-                                        <option value="">-- Select Payer --</option>
-                                        {payers.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-bold text-slate-900">Primary Payer (Client)</label>
+                                    {!showQuickAdd && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowQuickAdd(true)}
+                                            className="text-[10px] font-bold text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg flex items-center gap-1 transition-all"
+                                        >
+                                            <Plus size={12} />
+                                            Quick Add
+                                        </button>
+                                    )}
                                 </div>
+                                {showQuickAdd ? (
+                                    <div className="flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
+                                        <input
+                                            type="text"
+                                            value={newPayerName}
+                                            onChange={(e) => setNewPayerName(e.target.value)}
+                                            placeholder="Enter Client Name..."
+                                            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleQuickAddPayer}
+                                            disabled={isCreatingPayer || !newPayerName.trim()}
+                                            className="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50"
+                                        >
+                                            {isCreatingPayer ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setShowQuickAdd(false); setNewPayerName(''); }}
+                                            className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-slate-900"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                        <select
+                                            value={formData.payerId}
+                                            onChange={(e) => setFormData({ ...formData, payerId: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none hover:border-slate-300 transition-colors"
+                                        >
+                                            <option value="">-- Select Payer --</option>
+                                            {payers.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <p className="text-[10px] text-slate-400 mt-1 font-medium">All attendance and payments for this site will be linked to this payer.</p>
                             </div>
 

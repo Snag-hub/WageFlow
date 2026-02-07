@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, User, Phone, IndianRupee, Briefcase, Save, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, Phone, IndianRupee, Briefcase, Save, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface Employee {
@@ -189,10 +189,36 @@ export default function EditEmployeePage() {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
+                        className="flex-[2] py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
                     >
                         {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                         {saving ? 'Updating...' : 'Update Employee'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            if (confirm('Are you sure you want to delete this employee?')) {
+                                setSaving(true);
+                                try {
+                                    const res = await fetch(`/api/employees/${params.id}`, { method: 'DELETE' });
+                                    if (res.ok) {
+                                        router.push('/employees');
+                                        router.refresh();
+                                    } else {
+                                        const data = await res.json();
+                                        setError(data.message || 'Failed to delete');
+                                    }
+                                } catch (err) {
+                                    setError('An error occurred');
+                                } finally {
+                                    setSaving(false);
+                                }
+                            }
+                        }}
+                        className="flex-1 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Trash2 size={20} />
+                        Delete
                     </button>
                     <Link
                         href="/employees"
