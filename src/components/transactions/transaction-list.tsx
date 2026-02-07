@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, ArrowDownLeft, Calendar, User } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Calendar, User, Trash2 } from 'lucide-react';
 
 type Transaction = {
     id: string;
@@ -11,7 +11,32 @@ type Transaction = {
     employeeName: string;
 };
 
-export default function TransactionList({ transactions }: { transactions: Transaction[] }) {
+export default function TransactionList({
+    transactions,
+    onDeleteSuccess
+}: {
+    transactions: Transaction[],
+    onDeleteSuccess: () => void
+}) {
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+        try {
+            const res = await fetch(`/api/transactions?id=${id}`, {
+                method: 'DELETE',
+            });
+
+            if (res.ok) {
+                onDeleteSuccess();
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to delete transaction');
+            }
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            alert('Failed to delete transaction');
+        }
+    };
     if (transactions.length === 0) {
         return (
             <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
@@ -31,6 +56,7 @@ export default function TransactionList({ transactions }: { transactions: Transa
                             <th className="px-6 py-3">Type</th>
                             <th className="px-6 py-3">Note</th>
                             <th className="px-6 py-3 text-right">Amount</th>
+                            <th className="px-6 py-3 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -44,8 +70,8 @@ export default function TransactionList({ transactions }: { transactions: Transa
                                 </td>
                                 <td className="px-6 py-3">
                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${t.type === 'advance'
-                                            ? 'bg-red-50 text-red-700 border border-red-100'
-                                            : 'bg-green-50 text-green-700 border border-green-100'
+                                        ? 'bg-red-50 text-red-700 border border-red-100'
+                                        : 'bg-green-50 text-green-700 border border-green-100'
                                         }`}>
                                         {t.type === 'advance' ? <ArrowUpRight size={12} /> : <ArrowDownLeft size={12} />}
                                         {t.type}
@@ -57,6 +83,15 @@ export default function TransactionList({ transactions }: { transactions: Transa
                                 <td className={`px-6 py-3 text-right font-mono font-medium ${t.type === 'advance' ? 'text-red-600' : 'text-green-600'
                                     }`}>
                                     {t.type === 'advance' ? '-' : '+'}₹{t.amount.toLocaleString()}
+                                </td>
+                                <td className="px-6 py-3 text-right">
+                                    <button
+                                        onClick={() => handleDelete(t.id)}
+                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                        title="Delete Transaction"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </td>
                             </tr>
                         ))}

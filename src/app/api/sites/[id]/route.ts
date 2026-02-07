@@ -21,6 +21,13 @@ export async function GET(
                 id,
                 companyId: session.user.companyId,
             },
+            include: {
+                siteTransactions: {
+                    orderBy: { date: 'desc' },
+                    include: { payer: { select: { name: true } } }
+                },
+                payer: { select: { name: true } }
+            }
         });
 
         if (!site) {
@@ -50,6 +57,7 @@ export async function PUT(
         const {
             name,
             location,
+            clientId,
             pricingModel,
             rate,
             quantity,
@@ -80,6 +88,7 @@ export async function PUT(
             data: {
                 name: name.trim(),
                 location: location?.trim() || null,
+                clientId: clientId || null,
                 pricingModel: pricingModel || 'item_rate',
                 rate: rate ? parseFloat(rate) : null,
                 quantity: quantity ? parseFloat(quantity) : null,

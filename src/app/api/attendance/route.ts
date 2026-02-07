@@ -32,6 +32,13 @@ export async function GET(req: Request) {
                 companyId,
                 isActive: true
             },
+            select: {
+                id: true,
+                name: true,
+                type: true,
+                defaultWage: true,
+                defaultWorkTypeId: true
+            },
             orderBy: { name: 'asc' }
         });
 
@@ -149,5 +156,42 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error('Save Attendance Error:', error);
         return NextResponse.json({ message: error.message || 'Internal server error' }, { status: 500 });
+    }
+}
+
+// DELETE - Clear attendance for a specific date and site
+export async function DELETE(req: Request) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.companyId) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const { searchParams } = new URL(req.url);
+        const dateStr = searchParams.get('date');
+        const siteId = searchParams.get('siteId');
+
+        if (!dateStr || !siteId) {
+            return NextResponse.json({ message: 'Date and Site ID are required' }, { status: 400 });
+        }
+
+        const companyId = session.user.companyId;
+        const targetDate = new Date(dateStr);
+        const startOfDay = new Date(targetDate); startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate); endOfDay.setHours(23, 59, 59, 999);
+
+        await prisma.attendance.deleteMany({
+            where: {
+                companyId,
+                siteId,
+                date: { gte: startOfDay, lt: endOfDay }
+            }
+        });
+
+        return NextResponse.json({ message: 'Attendance cleared successfully' });
+    } catch (error) {
+        console.error('Delete Attendance Error:', error);
+        return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
     }
 }

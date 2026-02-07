@@ -6,17 +6,22 @@ import AttendanceSheet from '@/components/attendance/attendance-sheet';
 export default function AttendancePage() {
     const [date, setDate] = useState<Date>(new Date());
     const [selectedSiteId, setSelectedSiteId] = useState<string>('');
+    const [selectedPayerId, setSelectedPayerId] = useState<string>('');
     const [sites, setSites] = useState<{ id: string, name: string }[]>([]);
+    const [payers, setPayers] = useState<{ id: string, name: string }[]>([]);
 
-    // Fetch Sites on load
+    // Fetch Sites & Payers on load
     useEffect(() => {
-        fetch('/api/sites')
-            .then(res => res.json())
-            .then(data => {
-                setSites(data);
-                // Auto-select first site if available
-                if (data.length > 0) setSelectedSiteId(data[0].id);
-            });
+        Promise.all([
+            fetch('/api/sites').then(res => res.json()),
+            fetch('/api/payers').then(res => res.json())
+        ]).then(([sitesData, payersData]) => {
+            setSites(sitesData);
+            setPayers(payersData);
+            // Auto-select first site if available
+            if (sitesData.length > 0) setSelectedSiteId(sitesData[0].id);
+            if (payersData.length > 0) setSelectedPayerId(payersData[0].id);
+        });
     }, []);
 
     return (
@@ -48,14 +53,29 @@ export default function AttendancePage() {
                         ))}
                     </select>
                 </div>
+
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Payer</label>
+                    <select
+                        value={selectedPayerId}
+                        onChange={(e) => setSelectedPayerId(e.target.value)}
+                        className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                        <option value="">-- Choose Payer --</option>
+                        {payers.map(payer => (
+                            <option key={payer.id} value={payer.id}>{payer.name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Sheet */}
-            {selectedSiteId ? (
+            {selectedSiteId && selectedPayerId ? (
                 <AttendanceSheet
-                    key={`${date.toISOString()}-${selectedSiteId}`} // Force remount on change
+                    key={`${date.toISOString()}-${selectedSiteId}-${selectedPayerId}`} // Force remount on change
                     date={date}
                     siteId={selectedSiteId}
+                    payerId={selectedPayerId}
                     onSaveSuccess={() => { }} // Optional: Flash success or something
                 />
             ) : (

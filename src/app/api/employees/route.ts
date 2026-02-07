@@ -15,6 +15,9 @@ export async function GET() {
             where: {
                 companyId: session.user.companyId,
             },
+            include: {
+                defaultWorkType: true
+            },
             orderBy: {
                 createdAt: 'desc',
             },
@@ -35,7 +38,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { name, phone, type, defaultWage } = await req.json();
+        const { name, phone, type, defaultWage, defaultWorkTypeId } = await req.json();
 
         if (!name) {
             return NextResponse.json({ message: 'Name is required' }, { status: 400 });
@@ -62,6 +65,7 @@ export async function POST(req: Request) {
                 phone,
                 type: type || 'daily',
                 defaultWage: parseFloat(defaultWage) || 0,
+                defaultWorkTypeId: defaultWorkTypeId || null,
                 companyId: session.user.companyId,
             },
         });

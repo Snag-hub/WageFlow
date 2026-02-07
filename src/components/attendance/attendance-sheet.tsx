@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, CheckSquare, Square, Users, Plus } from 'lucide-react';
+import { Save, CheckSquare, Square, Users, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 type Employee = {
     id: string;
     name: string;
     type: string;
     defaultWage: number;
+    defaultWorkTypeId?: string;
 };
 
 type AttendanceRecord = {
@@ -22,10 +24,11 @@ type AttendanceRecord = {
 type Props = {
     date: Date;
     siteId: string;
+    payerId: string;
     onSaveSuccess: () => void;
 };
 
-export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) {
+export default function AttendanceSheet({ date, siteId, payerId, onSaveSuccess }: Props) {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [records, setRecords] = useState<Record<string, AttendanceRecord>>({});
     const [workTypes, setWorkTypes] = useState<{ id: string, name: string }[]>([]);
@@ -36,7 +39,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
     const [initialized, setInitialized] = useState(false);
 
     // Quick Add State
-    const [showAddModal, setShowAddModal] = useState<'workType' | 'payer' | null>(null);
+    const [showAddModal, setShowAddModal] = useState<'workType' | null>(null);
     const [newItemName, setNewItemName] = useState('');
     const [addingItem, setAddingItem] = useState(false);
 
@@ -45,7 +48,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
         if (!newItemName.trim() || !showAddModal) return;
 
         setAddingItem(true);
-        const endpoint = showAddModal === 'workType' ? '/api/work-types' : '/api/payers';
+        const endpoint = '/api/work-types';
 
         try {
             const res = await fetch(endpoint, {
@@ -56,19 +59,15 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
 
             if (res.ok) {
                 const data = await res.json();
-                if (showAddModal === 'workType') {
-                    setWorkTypes(prev => [...prev, data]);
-                } else {
-                    setPayers(prev => [...prev, data]);
-                }
+                setWorkTypes(prev => [...prev, data]);
                 setShowAddModal(null);
                 setNewItemName('');
             } else {
-                alert('Failed to add item');
+                toast.error('Failed to add item');
             }
         } catch (error) {
             console.error(error);
-            alert('Error adding item');
+            toast.error('Error adding item');
         } finally {
             setAddingItem(false);
         }
@@ -118,8 +117,8 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                             employeeId: emp.id,
                             isPresent: false,
                             wage: emp.defaultWage,
-                            workTypeId: '', // User must select
-                            payerId: ''     // User must select
+                            workTypeId: emp.defaultWorkTypeId || '',
+                            payerId: payerId
                         };
                     }
                 });
@@ -128,7 +127,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                 setInitialized(true);
             })
             .finally(() => setLoading(false));
-    }, [date, siteId]);
+    }, [date, siteId, payerId]);
 
     const updateRecord = (empId: string, field: keyof AttendanceRecord, value: any) => {
         setRecords(prev => ({
@@ -152,7 +151,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
         setRecords(prev => {
             const next = { ...prev };
             Object.keys(next).forEach(key => {
-                if (next[key].isPresent) { // Only apply to present (or all? usually present is safer)
+                if (next[key].isPresent) {
                     next[key] = { ...next[key], [field]: value };
                 }
             });
@@ -168,7 +167,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                 .filter(r => r.isPresent && (!r.workTypeId || !r.payerId));
 
             if (invalidRecs.length > 0) {
-                alert(`Please select Work Type and Payer for all present employees.`);
+                toast.warning(`Please select Work Type and Payer for all present employees.`);
                 setSaving(false);
                 return;
             }
@@ -193,11 +192,11 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
 
             if (!res.ok) throw new Error('Failed to save');
 
-            alert('Attendance saved successfully!');
+            toast.success('Attendance saved successfully!');
             onSaveSuccess();
         } catch (error) {
             console.error(error);
-            alert('Error saving attendance');
+            toast.error('Error saving attendance');
         } finally {
             setSaving(false);
         }
@@ -223,6 +222,42 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                     <Save size={18} />
                     {saving ? 'Saving...' : 'Save Attendance'}
                 </button>
+
+                <button
+                    onClick={async () => {
+                        if (confirm('Are you sure you want to CLEAR ALL records for this site and date? This cannot be undone.')) {
+                            setSaving(true);
+                            try {
+                                const dateStr = date.toISOString().split('T')[0];
+                                const res = await fetch(`/api/attendance?date=${dateStr}&siteId=${siteId}`, {
+                                    method: 'DELETE'
+                                });
+                                if (res.ok) {
+                                    alert('Attendance cleared successfully!');
+                                    // Reset local records to absent
+                                    const resetRecs = { ...records };
+                                    Object.keys(resetRecs).forEach(key => {
+                                        resetRecs[key] = { ...resetRecs[key], isPresent: false };
+                                    });
+                                    setRecords(resetRecs);
+                                } else {
+                                    const data = await res.json();
+                                    alert(data.message || 'Failed to clear attendance');
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                alert('Error clearing attendance');
+                            } finally {
+                                setSaving(false);
+                            }
+                        }
+                    }}
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-red-50 text-red-600 px-6 py-2 rounded-lg font-medium hover:bg-red-100 disabled:opacity-50 transition-colors"
+                >
+                    <Trash2 size={18} />
+                    Clear Sheet
+                </button>
             </div>
 
             {/* Desktop Table */}
@@ -234,7 +269,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                             <th className="px-4 py-3">Employee</th>
                             <th className="px-4 py-3">
                                 <div className="flex items-center gap-2">
-                                    Work Type
+                                    Work Type / Role
                                     <button
                                         onClick={() => setShowAddModal('workType')}
                                         className="text-indigo-600 hover:bg-indigo-50 rounded p-0.5"
@@ -246,7 +281,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                                         className="text-xs border rounded px-1 py-0.5 font-normal normal-case ml-auto"
                                         onChange={(e) => handleApplyAll('workTypeId', e.target.value)}
                                     >
-                                        <option value="">Apply All...</option>
+                                        <option value="">Apply All Roles...</option>
                                         {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
                                     </select>
                                 </div>
@@ -254,18 +289,11 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                             <th className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                     Payer
-                                    <button
-                                        onClick={() => setShowAddModal('payer')}
-                                        className="text-indigo-600 hover:bg-indigo-50 rounded p-0.5"
-                                        title="Add New Payer"
-                                    >
-                                        <Plus size={14} />
-                                    </button>
                                     <select
                                         className="text-xs border rounded px-1 py-0.5 font-normal normal-case ml-auto"
                                         onChange={(e) => handleApplyAll('payerId', e.target.value)}
                                     >
-                                        <option value="">Apply All...</option>
+                                        <option value="">Apply All Payers...</option>
                                         {payers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                     </select>
                                 </div>
@@ -302,7 +330,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                                                 onChange={(e) => updateRecord(emp.id, 'workTypeId', e.target.value)}
                                                 className="w-full border-slate-200 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
                                             >
-                                                <option value="">Select...</option>
+                                                <option value="">Select Role...</option>
                                                 {workTypes.map(wt => (
                                                     <option key={wt.id} value={wt.id}>{wt.name}</option>
                                                 ))}
@@ -316,7 +344,7 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                                                 onChange={(e) => updateRecord(emp.id, 'payerId', e.target.value)}
                                                 className="w-full border-slate-200 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
                                             >
-                                                <option value="">Select...</option>
+                                                <option value="">Select Payer...</option>
                                                 {payers.map(p => (
                                                     <option key={p.id} value={p.id}>{p.name}</option>
                                                 ))}
@@ -343,39 +371,26 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-3 p-4 bg-slate-50">
                 {/* Mobile Bulk Actions */}
-                <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4">
-                    <div className="text-xs font-bold text-slate-500 uppercase mb-2">Bulk Actions</div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                                <span>ROLE</span>
-                                <button onClick={() => setShowAddModal('workType')} className="text-indigo-600 flex items-center gap-0.5">
-                                    <Plus size={10} /> Add
-                                </button>
-                            </div>
-                            <select
-                                className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
-                                onChange={(e) => handleApplyAll('workTypeId', e.target.value)}
-                            >
-                                <option value="">Apply All...</option>
-                                {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                                <span>PAYER</span>
-                                <button onClick={() => setShowAddModal('payer')} className="text-indigo-600 flex items-center gap-0.5">
-                                    <Plus size={10} /> Add
-                                </button>
-                            </div>
-                            <select
-                                className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
-                                onChange={(e) => handleApplyAll('payerId', e.target.value)}
-                            >
-                                <option value="">Apply All...</option>
-                                {payers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
-                        </div>
+                <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 text-center">
+                    <div className="text-xs font-bold text-slate-500 uppercase mb-2">Role Actions</div>
+                    <div className="flex gap-3">
+                        <select
+                            className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
+                            onChange={(e) => handleApplyAll('workTypeId', e.target.value)}
+                        >
+                            <option value="">Apply Role to All...</option>
+                            {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
+                        </select>
+                        <select
+                            className="text-xs border-slate-200 rounded px-2 py-1.5 w-full"
+                            onChange={(e) => handleApplyAll('payerId', e.target.value)}
+                        >
+                            <option value="">Apply Payer to All...</option>
+                            {payers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                        <button onClick={() => setShowAddModal('workType')} className="text-indigo-600 border border-indigo-100 rounded px-3 py-1 bg-indigo-50 flex items-center gap-1 font-bold text-xs whitespace-nowrap">
+                            <Plus size={14} /> NEW
+                        </button>
                     </div>
                 </div>
 
@@ -440,7 +455,6 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
                                         </select>
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Daily Wage (₹)</label>
                                         <input
                                             type="number"
                                             value={rec.wage}
@@ -459,13 +473,13 @@ export default function AttendanceSheet({ date, siteId, onSaveSuccess }: Props) 
             {showAddModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm animate-in zoom-in-95">
-                        <h3 className="text-lg font-bold mb-4">Add {showAddModal === 'workType' ? 'Work Type' : 'Payer'}</h3>
+                        <h3 className="text-lg font-bold mb-4">Add Work Type</h3>
                         <form onSubmit={handleQuickAdd}>
                             <input
                                 autoFocus
                                 type="text"
                                 className="w-full border-slate-200 rounded-xl mb-4 focus:ring-indigo-500 focus:border-indigo-500"
-                                placeholder={`Enter ${showAddModal === 'workType' ? 'Role Name' : 'Payer Name'}`}
+                                placeholder="Enter Role Name"
                                 value={newItemName}
                                 onChange={(e) => setNewItemName(e.target.value)}
                             />

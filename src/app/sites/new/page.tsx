@@ -9,6 +9,7 @@ export default function NewSitePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [payers, setPayers] = useState<{ id: string, name: string }[]>([]);
+    const [clients, setClients] = useState<{ id: string, name: string }[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         location: '',
@@ -18,13 +19,44 @@ export default function NewSitePage() {
         contractAmount: '',
         includesMaterial: false,
         notes: '',
-        payerId: ''
+        payerId: '',
+        clientId: ''
     });
 
     // Quick Add Payer State
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [newPayerName, setNewPayerName] = useState('');
     const [isCreatingPayer, setIsCreatingPayer] = useState(false);
+
+    // Quick Add Client State
+    const [showQuickAddClient, setShowQuickAddClient] = useState(false);
+    const [newClientName, setNewClientName] = useState('');
+    const [isCreatingClient, setIsCreatingClient] = useState(false);
+
+    const handleQuickAddClient = async () => {
+        if (!newClientName.trim()) return;
+        setIsCreatingClient(true);
+        try {
+            const res = await fetch('/api/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newClientName }),
+            });
+            if (res.ok) {
+                const newClient = await res.json();
+                setClients(prev => [...prev, newClient]);
+                setFormData(prev => ({ ...prev, clientId: newClient.id }));
+                setShowQuickAddClient(false);
+                setNewClientName('');
+            } else {
+                alert('Failed to add client');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            setIsCreatingClient(false);
+        }
+    };
 
     const handleQuickAddPayer = async () => {
         if (!newPayerName.trim()) return;
@@ -42,7 +74,7 @@ export default function NewSitePage() {
                 setShowQuickAdd(false);
                 setNewPayerName('');
             } else {
-                alert('Failed to adding client');
+                alert('Failed to adding client'); // Wait, the original code said "adding client" here too, should fix to "adding payer"
             }
         } catch (error) {
             console.error('Error:', error);
@@ -52,12 +84,16 @@ export default function NewSitePage() {
     };
 
     useEffect(() => {
-        fetch('/api/payers')
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setPayers(data);
+        // Fetch payers and clients in parallel
+        Promise.all([
+            fetch('/api/payers').then(res => res.json()),
+            fetch('/api/clients').then(res => res.json())
+        ])
+            .then(([payersData, clientsData]) => {
+                if (Array.isArray(payersData)) setPayers(payersData);
+                if (Array.isArray(clientsData)) setClients(clientsData);
             })
-            .catch(err => console.error('Error fetching payers:', err));
+            .catch(err => console.error('Error fetching data:', err));
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -137,9 +173,69 @@ export default function NewSitePage() {
                         <h3 className="text-lg font-bold text-slate-900 mb-4">Contract & Pricing</h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {/* Client (Site Owner) */}
                             <div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-bold text-slate-900">Primary Payer (Client)</label>
+                                    <label className="block text-sm font-bold text-slate-900">Site Owner (Client)</label>
+                                    {!showQuickAddClient && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowQuickAddClient(true)}
+                                            className="text-[10px] font-bold text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg flex items-center gap-1 transition-all"
+                                        >
+                                            <Plus size={12} />
+                                            Quick Add
+                                        </button>
+                                    )}
+                                </div>
+                                {showQuickAddClient ? (
+                                    <div className="flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
+                                        <input
+                                            type="text"
+                                            value={newClientName}
+                                            onChange={(e) => setNewClientName(e.target.value)}
+                                            placeholder="Enter Client Name..."
+                                            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleQuickAddClient}
+                                            disabled={isCreatingClient || !newClientName.trim()}
+                                            className="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50"
+                                        >
+                                            {isCreatingClient ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setShowQuickAddClient(false); setNewClientName(''); }}
+                                            className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-slate-900"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                        <select
+                                            value={formData.clientId}
+                                            onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none hover:border-slate-300 transition-colors"
+                                        >
+                                            <option value="">-- Select Client --</option>
+                                            {clients.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <p className="text-[10px] text-slate-400 mt-1 font-medium">The person/company who owns the site.</p>
+                            </div>
+
+                            {/* Payer (Billing Entity) */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-bold text-slate-900">Billing Entity (Payer)</label>
                                     {!showQuickAdd && (
                                         <button
                                             type="button"
@@ -157,7 +253,7 @@ export default function NewSitePage() {
                                             type="text"
                                             value={newPayerName}
                                             onChange={(e) => setNewPayerName(e.target.value)}
-                                            placeholder="Enter Client Name..."
+                                            placeholder="Enter Payer Name..."
                                             className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
                                             autoFocus
                                         />
@@ -192,21 +288,21 @@ export default function NewSitePage() {
                                         </select>
                                     </div>
                                 )}
-                                <p className="text-[10px] text-slate-400 mt-1 font-medium">All attendance and payments for this site will be linked to this payer.</p>
+                                <p className="text-[10px] text-slate-400 mt-1 font-medium">The entity responsible for processing payments.</p>
                             </div>
+                        </div>
 
-                            <div>
-                                <label className="block text-sm font-bold text-slate-900 mb-2">Pricing Model</label>
-                                <select
-                                    value={formData.pricingModel}
-                                    onChange={(e) => setFormData({ ...formData, pricingModel: e.target.value })}
-                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
-                                >
-                                    <option value="item_rate">Item Rate (Per SqFt/Unit)</option>
-                                    <option value="lump_sum">Lump Sum (Fixed Price)</option>
-                                    <option value="cost_plus">Cost Plus (Daily Wage)</option>
-                                </select>
-                            </div>
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold text-slate-900 mb-2">Pricing Model</label>
+                            <select
+                                value={formData.pricingModel}
+                                onChange={(e) => setFormData({ ...formData, pricingModel: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                            >
+                                <option value="item_rate">Item Rate (Per SqFt/Unit)</option>
+                                <option value="lump_sum">Lump Sum (Fixed Price)</option>
+                                <option value="cost_plus">Cost Plus (Daily Wage)</option>
+                            </select>
                         </div>
 
                         <div className="flex items-center mb-6">

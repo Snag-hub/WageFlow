@@ -135,21 +135,6 @@ export default function SitesPage() {
                                         <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
                                             <MapPin className="text-indigo-600" size={24} />
                                         </div>
-                                        <div className="flex gap-1">
-                                            <Link
-                                                href={`/sites/${site.id}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all"
-                                            >
-                                                <Edit2 size={16} />
-                                            </Link>
-                                            <button
-                                                onClick={(e) => handleDelete(e, site.id)}
-                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
                                     </div>
 
                                     <h3 className="text-lg font-bold text-slate-900 mb-1">{site.name}</h3>

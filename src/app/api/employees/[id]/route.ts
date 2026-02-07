@@ -21,6 +21,20 @@ export async function GET(
                 id,
                 companyId: session.user.companyId,
             },
+            include: {
+                attendance: {
+                    orderBy: { date: 'desc' },
+                    take: 10,
+                    include: { site: { select: { name: true } } }
+                },
+                transactions: {
+                    orderBy: { date: 'desc' },
+                    take: 10
+                },
+                _count: {
+                    select: { attendance: true, transactions: true }
+                }
+            }
         });
 
         if (!employee) {

@@ -6,8 +6,11 @@ import {
     Plus,
     Trash2,
     CreditCard,
-    Settings as SettingsIcon
+    Settings as SettingsIcon,
+    Sparkles,
+    Loader2
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 interface WorkType {
     id: string;
@@ -34,6 +37,7 @@ export default function SettingsPage() {
     const [newPayer, setNewPayer] = useState({ name: '', contactInfo: '' });
     const [addingWorkType, setAddingWorkType] = useState(false);
     const [addingPayer, setAddingPayer] = useState(false);
+    const [processingSalary, setProcessingSalary] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -55,6 +59,7 @@ export default function SettingsPage() {
             if (Array.isArray(payersData)) setPayers(payersData);
         } catch (error) {
             console.error('Error fetching data:', error);
+            toast.error('Failed to load settings data');
         } finally {
             setLoading(false);
         }
@@ -76,12 +81,13 @@ export default function SettingsPage() {
                 const data = await res.json();
                 setWorkTypes([...workTypes, { ...data, _count: { attendance: 0 } }]);
                 setNewWorkType('');
+                toast.success('Work type added');
             } else {
-                alert('Failed to add work type');
+                toast.error('Failed to add work type');
             }
         } catch (error) {
             console.error('Error adding work type:', error);
-            alert('Failed to add work type');
+            toast.error('An error occurred');
         } finally {
             setAddingWorkType(false);
         }
@@ -103,14 +109,34 @@ export default function SettingsPage() {
                 const data = await res.json();
                 setPayers([...payers, { ...data, _count: { attendance: 0 } }]);
                 setNewPayer({ name: '', contactInfo: '' });
+                toast.success('Payer added');
             } else {
-                alert('Failed to add payer');
+                toast.error('Failed to add payer');
             }
         } catch (error) {
             console.error('Error adding payer:', error);
-            alert('Failed to add payer');
+            toast.error('An error occurred');
         } finally {
             setAddingPayer(false);
+        }
+    };
+
+    const handleGenerateSalaries = async () => {
+        if (!confirm('This will create salary credit transactions for all active salaried employees for the current month. Proceed?')) return;
+
+        setProcessingSalary(true);
+        try {
+            const res = await fetch('/api/automation/generate-salaries', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message || 'Salaries processed');
+            } else {
+                toast.error(data.message || 'Failed to process salaries');
+            }
+        } catch (error) {
+            toast.error('Automation error occurred');
+        } finally {
+            setProcessingSalary(false);
         }
     };
 
@@ -126,7 +152,7 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Work Types Section */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                     <div className="p-4 border-b border-slate-100 bg-slate-50/50">
                         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                             <Briefcase size={20} className="text-slate-600" />
@@ -135,7 +161,7 @@ export default function SettingsPage() {
                         <p className="text-xs text-slate-500 mt-1">Job roles like Mason, Helper, Carpenter, etc.</p>
                     </div>
 
-                    <div className="p-4">
+                    <div className="p-4 flex-1 flex flex-col">
                         <form onSubmit={handleAddWorkType} className="flex gap-2 mb-4">
                             <input
                                 type="text"
@@ -181,7 +207,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Payers Section */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                     <div className="p-4 border-b border-slate-100 bg-slate-50/50">
                         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                             <CreditCard size={20} className="text-slate-600" />
@@ -190,7 +216,7 @@ export default function SettingsPage() {
                         <p className="text-xs text-slate-500 mt-1">People or companies who pay for the work.</p>
                     </div>
 
-                    <div className="p-4">
+                    <div className="p-4 flex-1 flex flex-col">
                         <form onSubmit={handleAddPayer} className="space-y-2 mb-4">
                             <input
                                 type="text"
@@ -244,6 +270,35 @@ export default function SettingsPage() {
                                 ))
                             )}
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Automation Section */}
+            <div className="bg-slate-900 rounded-3xl p-8 border border-white/10 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-bl-[200px] blur-3xl group-hover:bg-indigo-500/20 transition-all" />
+                <div className="relative">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
+                                    <Sparkles className="text-indigo-400" />
+                                </div>
+                                Salary Automation
+                            </h2>
+                            <p className="text-white/60 font-medium mt-3 max-w-md">
+                                Automatically credit monthly salaries for all active "Fixed Salary" employees.
+                                This avoids manual recording every month.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleGenerateSalaries}
+                            disabled={processingSalary}
+                            className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                            {processingSalary ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
+                            Process Monthly Salaries
+                        </button>
                     </div>
                 </div>
             </div>
