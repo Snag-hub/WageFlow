@@ -16,6 +16,7 @@ export async function GET() {
             where: { companyId: session.user.companyId },
             orderBy: { name: 'asc' },
             include: {
+                client: true,
                 _count: {
                     select: { attendance: true }
                 }
@@ -48,7 +49,8 @@ export async function POST(req: Request) {
             contractAmount,
             includesMaterial,
             notes,
-            payerId
+            payerId,
+            clientId
         } = body;
 
         if (!name || name.trim() === '') {
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
                 name: name.trim(),
                 location: location?.trim() || null,
                 companyId: session.user.companyId,
+                clientId: clientId || null,
                 pricingModel: pricingModel || 'item_rate',
                 rate: rate ? parseFloat(rate) : null,
                 quantity: quantity ? parseFloat(quantity) : null,

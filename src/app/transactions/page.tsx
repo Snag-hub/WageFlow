@@ -66,7 +66,10 @@ export default function TransactionsPage() {
                     <p className="text-slate-500">Loading records...</p>
                 </div>
             ) : (
-                <TransactionList transactions={transactions} />
+                <TransactionList
+                    transactions={transactions}
+                    onDeleteSuccess={fetchTransactions}
+                />
             )}
 
             <AddTransactionModal

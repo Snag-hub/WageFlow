@@ -20,6 +20,7 @@ model Company {
   sites       Site[]
   workTypes   WorkType[]
   payers      Payer[]
+  clients     Client[]
   attendance  Attendance[]
   transactions Transaction[]
 }
@@ -46,6 +47,8 @@ model Employee {
   phone        String?
   type         String   @default("daily") // daily, salary
   defaultWage  Float    @default(0)
+  defaultWorkTypeId String?
+  defaultWorkType   WorkType? @relation("EmployeeDefaultWorkType", fields: [defaultWorkTypeId], references: [id])
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   
@@ -59,6 +62,8 @@ model Site {
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name      String
   location          String?
+  clientId          String?
+  client            Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   
   // Financials
   pricingModel      String   @default("item_rate") // item_rate, lump_sum, cost_plus
@@ -76,14 +81,31 @@ model Site {
   transactions      Transaction[]
 }
 
+model Client {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  contactInfo String?
+  email       String?
+  phone       String?
+  address     String?
+  createdAt   DateTime @default(now())
+
+  sites       Site[]
+}
+
 model SiteTransaction {
   id          String   @id @default(uuid())
   siteId      String
   site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  payerId     String?
+  payer       Payer?   @relation(fields: [payerId], references: [id], onDelete: SetNull)
   amount      Float
   date        DateTime
-  type        String   // advance, settlement
-  paymentMode String   @default("cash") // cash, upi, cheque
+  type        String   // income, expense (though site trans are usually income)
+  category    String   @default("payment") // advance, settlement, refund
+  paymentMode String   @default("cash") // cash, upi, cheque, bank_transfer
   note        String?
   createdAt   DateTime @default(now())
 }
@@ -95,6 +117,7 @@ model WorkType {
   name      String   // Mason, Helper, etc.
   
   attendance Attendance[]
+  employees  Employee[]   @relation("EmployeeDefaultWorkType")
 }
 
 model Payer {
@@ -105,6 +128,7 @@ model Payer {
   contactInfo String?
   
   sites       Site[]
+  siteTransactions SiteTransaction[]
   attendance  Attendance[]
 }
 
@@ -140,7 +164,9 @@ model Transaction {
   site         Site?       @relation(fields: [siteId], references: [id], onDelete: SetNull)
   type         String   // advance, payment, salary_credit
   amount       Float
+  paymentMode  String   @default("cash") // cash, upi, cheque, bank_transfer
   date         DateTime
   note         String?
   createdAt    DateTime @default(now())
 }
+

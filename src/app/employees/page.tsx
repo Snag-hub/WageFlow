@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
     Users,
     Plus,
@@ -15,7 +16,7 @@ import {
     Trash2,
     Loader2
 } from 'lucide-react';
-import Link from 'next/link';
+import { toast } from 'react-toastify';
 
 interface Employee {
     id: string;
@@ -46,6 +47,7 @@ export default function EmployeesPage() {
             }
         } catch (error) {
             console.error('Error fetching employees:', error);
+            toast.error('Failed to load employees');
         } finally {
             setLoading(false);
         }
@@ -64,14 +66,15 @@ export default function EmployeesPage() {
             });
 
             if (res.ok) {
+                toast.success('Employee deleted successfully');
                 setEmployees(employees.filter(emp => emp.id !== id));
             } else {
                 const data = await res.json();
-                alert(data.message || 'Failed to delete employee');
+                toast.error(data.message || 'Failed to delete employee');
             }
         } catch (error) {
             console.error('Delete Error:', error);
-            alert('An error occurred while deleting');
+            toast.error('An error occurred while deleting');
         } finally {
             setDeletingId(null);
         }

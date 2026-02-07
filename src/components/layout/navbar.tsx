@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { Bell, Search, LayoutGrid } from 'lucide-react';
+import { Bell, Search, LayoutGrid, TrendingUp } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 
 export function Navbar() {
@@ -25,6 +25,14 @@ export function Navbar() {
                 >
                     <LayoutGrid size={16} />
                     Hub
+                </Link>
+
+                <Link
+                    href="/dashboard/earnings"
+                    className="hidden lg:flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg hover:bg-slate-100"
+                >
+                    <TrendingUp size={16} />
+                    Earnings
                 </Link>
             </div>
 

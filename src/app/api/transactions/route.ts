@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { employeeId, type, amount, date, note, siteId } = await req.json();
+        const { employeeId, type, amount, date, note, siteId, paymentMode } = await req.json();
 
         if (!employeeId || !type || !amount || !date) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
@@ -74,6 +74,7 @@ export async function POST(req: Request) {
                 employeeId,
                 type, // 'advance', 'payment', 'salary_credit'
                 amount: parseFloat(amount),
+                paymentMode: paymentMode || 'cash',
                 date: new Date(date),
                 note: note || '',
                 siteId: siteId || null
@@ -83,6 +84,44 @@ export async function POST(req: Request) {
         return NextResponse.json(transaction, { status: 201 });
     } catch (error) {
         console.error('Create Transaction Error:', error);
+        return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    }
+}
+
+// DELETE - Remove a transaction
+export async function DELETE(req: Request) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.companyId) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ message: 'ID is required' }, { status: 400 });
+        }
+
+        const transaction = await prisma.transaction.findFirst({
+            where: {
+                id,
+                companyId: session.user.companyId
+            }
+        });
+
+        if (!transaction) {
+            return NextResponse.json({ message: 'Transaction not found' }, { status: 404 });
+        }
+
+        await prisma.transaction.delete({
+            where: { id }
+        });
+
+        return NextResponse.json({ message: 'Transaction deleted successfully' });
+    } catch (error) {
+        console.error('Delete Transaction Error:', error);
         return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
     }
 }

@@ -23,7 +23,11 @@ export async function GET() {
                 orderBy: { date: 'desc' },
                 include: {
                     employee: true,
-                    site: true
+                    site: {
+                        include: {
+                            client: true
+                        }
+                    }
                 }
             })
         ]);
@@ -38,6 +42,7 @@ export async function GET() {
                 id: a.id,
                 employeeName: a.employee.name,
                 siteName: a.site.name,
+                clientName: a.site.client?.name || 'No Client',
                 status: a.isPresent ? 'Present' : 'Absent',
                 time: a.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }))

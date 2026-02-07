@@ -1,7 +1,7 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, IndianRupee } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { CustomDatePicker, CustomCombobox } from '@/components/ui/custom-inputs';
+import { useEffect, useState } from 'react';
 
 type Props = {
     isOpen: boolean;
@@ -18,6 +18,7 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }: Prop
     const [employeeId, setEmployeeId] = useState('');
     const [type, setType] = useState('advance'); // advance, payment
     const [amount, setAmount] = useState('');
+    const [paymentMode, setPaymentMode] = useState('cash'); // cash, upi, cheque, bank_transfer
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [note, setNote] = useState('');
 
@@ -27,12 +28,17 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }: Prop
             fetch('/api/employees')
                 .then(res => res.json())
                 .then(data => setEmployees(data))
+                .catch(() => toast.error('Failed to load employees'))
                 .finally(() => setLoading(false));
         }
     }, [isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!employeeId) return toast.error('Please select an employee');
+        if (!amount || parseFloat(amount) <= 0) return toast.error('Please enter a valid amount');
+
         setSubmitting(true);
 
         try {
@@ -42,21 +48,26 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }: Prop
                 body: JSON.stringify({
                     employeeId,
                     type,
-                    amount,
+                    amount: parseFloat(amount),
+                    paymentMode,
                     date,
                     note
                 })
             });
 
-            if (!res.ok) throw new Error('Failed to save');
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to save');
+            }
 
+            toast.success(`${type === 'advance' ? 'Advance' : 'Payment'} recorded successfully`);
             setEmployeeId('');
             setAmount('');
             setNote('');
             onSuccess();
             onClose();
-        } catch (error) {
-            alert('Error saving transaction');
+        } catch (error: any) {
+            toast.error(error.message || 'Error saving transaction');
         } finally {
             setSubmitting(false);
         }
@@ -74,81 +85,88 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }: Prop
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Employee</label>
-                        <select
-                            required
-                            value={employeeId}
-                            onChange={(e) => setEmployeeId(e.target.value)}
-                            className="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-                        >
-                            <option value="">Select Employee...</option>
-                            {employees.map(emp => (
-                                <option key={emp.id} value={emp.id}>{emp.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    <CustomCombobox
+                        label="Select Employee"
+                        options={employees}
+                        value={employeeId}
+                        onChange={setEmployeeId}
+                        placeholder="Search employee..."
+                    />
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Type</label>
+                            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
                                 <button
                                     type="button"
                                     onClick={() => setType('advance')}
-                                    className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-all ${type === 'advance'
-                                            ? 'bg-white text-red-600 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
+                                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all ${type === 'advance'
+                                        ? 'bg-red-600 text-white shadow-md'
+                                        : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
-                                    Advance
+                                    ADVANCE
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setType('payment')}
-                                    className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-all ${type === 'payment'
-                                            ? 'bg-white text-green-600 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
+                                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all ${type === 'payment'
+                                        ? 'bg-emerald-600 text-white shadow-md'
+                                        : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
-                                    Payment
+                                    PAYMENT
                                 </button>
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Amount (₹)</label>
-                            <input
-                                type="number"
-                                required
-                                min="1"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                className="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
-                                placeholder="0.00"
-                            />
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Amount</label>
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors font-bold text-sm">₹</div>
+                                <input
+                                    type="number"
+                                    required
+                                    min="1"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none transition-all font-black text-slate-900 shadow-sm"
+                                    placeholder="0.00"
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
-                        <input
-                            type="date"
-                            required
+                    <div className="grid grid-cols-2 gap-4">
+                        <CustomDatePicker
+                            label="Transaction Date"
                             value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
+                            onChange={setDate}
                         />
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Mode</label>
+                            <select
+                                value={paymentMode}
+                                onChange={(e) => setPaymentMode(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none transition-all text-sm font-medium text-slate-900 shadow-sm appearance-none"
+                            >
+                                <option value="cash">Cash</option>
+                                <option value="upi">UPI / GPay</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="cheque">Cheque</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Note (Optional)</label>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Note (Optional)</label>
                         <textarea
                             rows={3}
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
-                            className="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-                            placeholder="Reason for advance..."
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none transition-all text-sm font-medium text-slate-900 shadow-sm resize-none"
+                            placeholder="Reason for transaction..."
                         />
                     </div>
 
@@ -156,11 +174,13 @@ export default function AddTransactionModal({ isOpen, onClose, onSuccess }: Prop
                         <button
                             type="submit"
                             disabled={submitting}
-                            className={`w-full py-3 rounded-xl font-bold text-white shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 ${type === 'advance' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+                            className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-2 ${type === 'advance'
+                                ? 'bg-slate-900 hover:shadow-red-600/20'
+                                : 'bg-slate-900 hover:shadow-emerald-600/20'
                                 }`}
                         >
                             <Save size={18} />
-                            {submitting ? 'Saving...' : type === 'advance' ? 'Record Advance' : 'Record Payment'}
+                            {submitting ? 'PROCESSING...' : `CONFIRM ${type.toUpperCase()}`}
                         </button>
                     </div>
                 </form>

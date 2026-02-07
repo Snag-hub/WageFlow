@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Save, CreditCard, Plus, X, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, CreditCard, Plus, X, Check, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'react-toastify';
 
 interface Site {
     id: string;
     name: string;
     location: string | null;
+    clientId: string | null;
+    client?: { name: string } | null;
     pricingModel: string;
     includesMaterial: boolean;
     rate: number | null;
@@ -24,6 +27,7 @@ export default function EditSitePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [payers, setPayers] = useState<{ id: string, name: string }[]>([]);
+    const [clients, setClients] = useState<{ id: string, name: string }[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         location: '',
@@ -33,13 +37,44 @@ export default function EditSitePage() {
         quantity: '',
         contractAmount: '',
         notes: '',
-        payerId: ''
+        payerId: '',
+        clientId: ''
     });
 
     // Quick Add Payer State
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [newPayerName, setNewPayerName] = useState('');
     const [isCreatingPayer, setIsCreatingPayer] = useState(false);
+
+    // Quick Add Client State
+    const [showQuickAddClient, setShowQuickAddClient] = useState(false);
+    const [newClientName, setNewClientName] = useState('');
+    const [isCreatingClient, setIsCreatingClient] = useState(false);
+
+    const handleQuickAddClient = async () => {
+        if (!newClientName.trim()) return;
+        setIsCreatingClient(true);
+        try {
+            const res = await fetch('/api/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newClientName }),
+            });
+            if (res.ok) {
+                const newClient = await res.json();
+                setClients(prev => [...prev, newClient]);
+                setFormData(prev => ({ ...prev, clientId: newClient.id }));
+                setShowQuickAddClient(false);
+                setNewClientName('');
+            } else {
+                alert('Failed to add client');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            setIsCreatingClient(false);
+        }
+    };
 
     const handleQuickAddPayer = async () => {
         if (!newPayerName.trim()) return;
@@ -69,9 +104,11 @@ export default function EditSitePage() {
     useEffect(() => {
         Promise.all([
             fetchSite(),
-            fetch('/api/payers').then(res => res.json())
-        ]).then(([_, payersData]) => {
+            fetch('/api/payers').then(res => res.json()),
+            fetch('/api/clients').then(res => res.json())
+        ]).then(([_, payersData, clientsData]) => {
             if (Array.isArray(payersData)) setPayers(payersData);
+            if (Array.isArray(clientsData)) setClients(clientsData);
         }).catch(err => console.error('Initialization error:', err));
     }, []);
 
@@ -89,15 +126,16 @@ export default function EditSitePage() {
                     quantity: data.quantity ? data.quantity.toString() : '',
                     contractAmount: data.contractAmount ? data.contractAmount.toString() : '',
                     notes: data.notes || '',
-                    payerId: data.payerId || ''
+                    payerId: data.payerId || '',
+                    clientId: data.clientId || ''
                 });
             } else {
-                alert('Site not found');
+                toast.error('Site not found');
                 router.push('/sites');
             }
         } catch (error) {
             console.error('Error fetching site:', error);
-            alert('Failed to load site');
+            toast.error('Failed to load site');
             router.push('/sites');
         } finally {
             setLoading(false);
@@ -121,18 +159,16 @@ export default function EditSitePage() {
             });
 
             if (res.ok) {
-                // Return to Dashboard or List? Usually Dashboard now.
-                // But initially lets go to list or keep it simple.
-                // User said "edit site is old only", so creating this new path fixes it.
-                // We should probably redirect to the Site Dashboard [id] eventually.
+                toast.success('Site updated successfully');
                 router.push(`/sites/${params.id}`);
+                router.refresh();
             } else {
                 const data = await res.json();
-                alert(data.message || 'Failed to update site');
+                toast.error(data.message || 'Failed to update site');
             }
         } catch (error) {
             console.error('Error updating site:', error);
-            alert('Failed to update site');
+            toast.error('An error occurred');
         } finally {
             setSaving(false);
         }
@@ -163,18 +199,79 @@ export default function EditSitePage() {
 
             <div className="max-w-2xl">
                 <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-bold text-slate-900 mb-2">
-                            Site Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            required
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none transition-all"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label htmlFor="name" className="block text-sm font-bold text-slate-900 mb-2">
+                                Site Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="name"
+                                required
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none transition-all placeholder:text-slate-300"
+                                placeholder="e.g. Skyline Residency"
+                            />
+                        </div>
+
+                        {/* Client (Site Owner) */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-bold text-slate-900">Site Owner (Client)</label>
+                                {!showQuickAddClient && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowQuickAddClient(true)}
+                                        className="text-[10px] font-bold text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg flex items-center gap-1 transition-all"
+                                    >
+                                        <Plus size={12} />
+                                        Quick Add
+                                    </button>
+                                )}
+                            </div>
+                            {showQuickAddClient ? (
+                                <div className="flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
+                                    <input
+                                        type="text"
+                                        value={newClientName}
+                                        onChange={(e) => setNewClientName(e.target.value)}
+                                        placeholder="Enter Client Name..."
+                                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleQuickAddClient}
+                                        disabled={isCreatingClient || !newClientName.trim()}
+                                        className="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50"
+                                    >
+                                        {isCreatingClient ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setShowQuickAddClient(false); setNewClientName(''); }}
+                                        className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-slate-900"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <select
+                                        value={formData.clientId}
+                                        onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none hover:border-slate-300 transition-colors"
+                                    >
+                                        <option value="">-- Select Client --</option>
+                                        {clients.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div>
@@ -197,7 +294,7 @@ export default function EditSitePage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-bold text-slate-900">Primary Payer (Client)</label>
+                                    <label className="block text-sm font-bold text-slate-900">Billing Entity (Payer)</label>
                                     {!showQuickAdd && (
                                         <button
                                             type="button"
@@ -215,7 +312,7 @@ export default function EditSitePage() {
                                             type="text"
                                             value={newPayerName}
                                             onChange={(e) => setNewPayerName(e.target.value)}
-                                            placeholder="Enter Client Name..."
+                                            placeholder="Enter Payer Name..."
                                             className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 outline-none"
                                             autoFocus
                                         />
@@ -250,7 +347,7 @@ export default function EditSitePage() {
                                         </select>
                                     </div>
                                 )}
-                                <p className="text-[10px] text-slate-400 mt-1 font-medium">All attendance and payments for this site will be linked to this payer.</p>
+                                <p className="text-[10px] text-slate-400 mt-1 font-medium">The entity responsible for processing payments.</p>
                             </div>
 
                             <div>
@@ -331,11 +428,11 @@ export default function EditSitePage() {
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-100">
                         <button
                             type="submit"
                             disabled={saving}
-                            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all shadow-md shadow-slate-900/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-[2] inline-flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all shadow-md shadow-slate-900/10 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? (
                                 <>
@@ -349,9 +446,35 @@ export default function EditSitePage() {
                                 </>
                             )}
                         </button>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                if (confirm('Are you sure you want to delete this site? All data will be permanently removed.')) {
+                                    setSaving(true);
+                                    try {
+                                        const res = await fetch(`/api/sites/${params.id}`, { method: 'DELETE' });
+                                        if (res.ok) {
+                                            router.push('/sites');
+                                            router.refresh();
+                                        } else {
+                                            const data = await res.json();
+                                            alert(data.message || 'Failed to delete site');
+                                        }
+                                    } catch (err) {
+                                        alert('An error occurred while deleting');
+                                    } finally {
+                                        setSaving(false);
+                                    }
+                                }
+                            }}
+                            className="flex-1 py-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Trash2 size={18} />
+                            Delete
+                        </button>
                         <Link
                             href={`/sites/${params.id}`}
-                            className="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all"
+                            className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all text-center flex items-center justify-center"
                         >
                             Cancel
                         </Link>

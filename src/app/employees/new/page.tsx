@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     ArrowLeft,
@@ -20,10 +20,21 @@ export default function NewEmployeePage() {
         phone: '',
         type: 'daily',
         defaultWage: '',
+        defaultWorkTypeId: '',
     });
+    const [workTypes, setWorkTypes] = useState<{ id: string, name: string }[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
+
+    useEffect(() => {
+        fetch('/api/work-types')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setWorkTypes(data);
+            })
+            .catch(err => console.error('Error fetching work types:', err));
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -135,6 +146,23 @@ export default function NewEmployeePage() {
                             />
                         </div>
                         <p className="text-xs text-slate-400 ml-1">This will be used as the default for attendance entries.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-1">Default Role / Work Type</label>
+                        <div className="relative">
+                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <select
+                                value={formData.defaultWorkTypeId}
+                                onChange={(e) => setFormData({ ...formData, defaultWorkTypeId: e.target.value })}
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none transition-all appearance-none cursor-pointer"
+                            >
+                                <option value="">-- Select Work Type --</option>
+                                {workTypes.map(wt => (
+                                    <option key={wt.id} value={wt.id}>{wt.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
