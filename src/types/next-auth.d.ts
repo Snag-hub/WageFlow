@@ -8,14 +8,17 @@ declare module "next-auth" {
             companyId: string;
             companyName: string;
             role: string;
+            hasSeenTutorial: boolean;
         } & DefaultSession["user"]
     }
 
     interface User {
         id: string;
+        name: string;
         companyId: string;
         companyName: string;
         role: string;
+        hasSeenTutorial: boolean;
     }
 }
 
@@ -25,5 +28,6 @@ declare module "next-auth/jwt" {
         companyId: string;
         companyName: string;
         role: string;
+        hasSeenTutorial: boolean;
     }
 }

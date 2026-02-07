@@ -36,10 +36,11 @@ export const authOptions: NextAuthOptions = {
                 return {
                     id: user.id,
                     email: user.email,
-                    name: user.role, // Or add a name field to User model
+                    name: user.name,
                     companyId: user.companyId,
                     companyName: user.company?.name,
-                    role: user.role
+                    role: user.role,
+                    hasSeenTutorial: user.hasSeenTutorial
                 };
             }
         })
@@ -48,12 +49,16 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt"
     },
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             if (user) {
                 token.id = user.id;
                 token.companyId = user.companyId;
                 token.companyName = user.companyName;
                 token.role = user.role;
+                token.hasSeenTutorial = user.hasSeenTutorial;
+            }
+            if (trigger === "update" && session?.hasSeenTutorial !== undefined) {
+                token.hasSeenTutorial = session.hasSeenTutorial;
             }
             return token;
         },
@@ -63,6 +68,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.companyId = token.companyId;
                 session.user.companyName = token.companyName;
                 session.user.role = token.role;
+                session.user.hasSeenTutorial = token.hasSeenTutorial;
             }
             return session;
         }

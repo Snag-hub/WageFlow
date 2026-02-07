@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
+import { Logo } from '@/components/ui/logo';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -41,10 +42,8 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl border border-slate-200 shadow-xl">
-                <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 text-white mb-4">
-                        <LayoutDashboard size={28} />
-                    </div>
+                <div className="text-center flex flex-col items-center">
+                    <Logo size={64} className="mb-6" />
                     <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome Back</h2>
                     <p className="text-slate-500 mt-2">Sign in to your WageFlow account</p>
                 </div>

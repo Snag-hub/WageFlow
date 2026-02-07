@@ -5,9 +5,9 @@ import { Prisma } from '@prisma/client';
 
 export async function POST(req: Request) {
     try {
-        const { companyName, email, password } = await req.json();
+        const { companyName, name, email, phone, password } = await req.json();
 
-        if (!companyName || !email || !password) {
+        if (!companyName || !name || !email || !phone || !password) {
             return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
         }
 
@@ -27,12 +27,15 @@ export async function POST(req: Request) {
             const company = await tx.company.create({
                 data: {
                     name: companyName,
+                    phone: phone, // Store admin phone as company phone too for initial setup
                 },
             });
 
             const user = await tx.user.create({
                 data: {
                     email,
+                    name,
+                    phone,
                     passwordHash: hashedPassword,
                     role: 'admin',
                     companyId: company.id,
