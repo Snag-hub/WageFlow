@@ -39,7 +39,8 @@ export const authOptions: NextAuthOptions = {
                     name: user.name,
                     companyId: user.companyId,
                     companyName: user.company?.name,
-                    role: user.role
+                    role: user.role,
+                    hasSeenTutorial: user.hasSeenTutorial
                 };
             }
         })
@@ -54,6 +55,7 @@ export const authOptions: NextAuthOptions = {
                 token.companyId = user.companyId;
                 token.companyName = user.companyName;
                 token.role = user.role;
+                token.hasSeenTutorial = user.hasSeenTutorial;
             }
             return token;
         },
@@ -63,6 +65,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.companyId = token.companyId;
                 session.user.companyName = token.companyName;
                 session.user.role = token.role;
+                session.user.hasSeenTutorial = token.hasSeenTutorial;
             }
             return session;
         }

@@ -19,6 +19,8 @@ import {
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { WelcomeGuide } from '@/components/ui/welcome-guide';
 
 interface DashboardStats {
   employees: number;
@@ -38,9 +40,19 @@ const mainNavItems = [
 ];
 
 export default function Home() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const { data: session } = useSession();
+  const [stats, setStats] = useState<DashboardStats>({
+    employees: 0,
+    sites: 0,
+    attendanceRate: 0,
+    pendingDues: 0,
+    recentAttendance: [],
+  });
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+
+  // Trigger tutorial if not seen
+  const showTutorial = session?.user && !session.user.hasSeenTutorial;
 
   useEffect(() => {
     async function fetchStats() {
@@ -237,6 +249,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      {showTutorial && <WelcomeGuide />}
     </div>
   );
 }

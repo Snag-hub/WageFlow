@@ -34,6 +34,7 @@ model User {
   passwordHash  String
   role          String   @default("user") // admin, user
   isActive      Boolean  @default(true)
+  hasSeenTutorial Boolean @default(false)
   createdAt     DateTime @default(now())
 }
 
