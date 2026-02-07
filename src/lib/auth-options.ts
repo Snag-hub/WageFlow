@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
                 return {
                     id: user.id,
                     email: user.email,
-                    name: user.role, // Or add a name field to User model
+                    name: user.name,
                     companyId: user.companyId,
                     companyName: user.company?.name,
                     role: user.role
