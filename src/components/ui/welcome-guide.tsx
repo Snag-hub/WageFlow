@@ -11,6 +11,7 @@ import {
     CheckCircle2,
     X
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { Logo } from './logo';
 
 interface Step {
@@ -48,6 +49,7 @@ const steps: Step[] = [
 ];
 
 export function WelcomeGuide() {
+    const { data: session, update } = useSession();
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
 
@@ -67,8 +69,8 @@ export function WelcomeGuide() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hasSeenTutorial: true }),
             });
-            // Force a refresh to update session or just let it be
-            window.location.reload();
+            // Update the local session state so it reflects in page.tsx immediately
+            await update({ hasSeenTutorial: true });
         } catch (error) {
             console.error('Failed to update tutorial status:', error);
         }
